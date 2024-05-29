@@ -7,12 +7,15 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 
+# Global variable for label encoders
+label_encoders = {}
+
 # Load and preprocess the dataset
 def load_data():
+    global label_encoders
     brain_stroke = pd.read_csv('brain_stroke.csv')
 
     # Encoding categorical variables
-    label_encoders = {}
     for col in ['gender', 'work_type', 'Residence_type', 'smoking_status']:
         label_encoders[col] = LabelEncoder()
         brain_stroke[col] = label_encoders[col].fit_transform(brain_stroke[col])
@@ -59,7 +62,7 @@ def prepare_data(brain_stroke):
     smote = SMOTE(random_state=42)
     X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
 
-    return X_resampled, y_resampled, X_test, y_test
+    return X_resampled, y_resampled, X_test, y_test, imputer, scaler
 
 # Train the logistic regression model
 def train_model(X_resampled, y_resampled):
@@ -68,12 +71,12 @@ def train_model(X_resampled, y_resampled):
     return model
 
 # Make predictions
-def predict(model, X_test):
-    return model.predict(X_test)
+def predict(model, user_df):
+    return model.predict(user_df)
 
 # Load and preprocess the data
 brain_stroke = load_data()
-X_resampled, y_resampled, X_test, y_test = prepare_data(brain_stroke)
+X_resampled, y_resampled, X_test, y_test, imputer, scaler = prepare_data(brain_stroke)
 
 # Train the model
 model = train_model(X_resampled, y_resampled)
@@ -118,7 +121,7 @@ user_df = imputer.transform(user_df)
 user_df = scaler.transform(user_df)
 
 # Predict the probability of stroke
-prediction = model.predict(user_df)
+prediction = predict(model, user_df)
 
 if prediction[0] == 1:
     st.write("## The model predicts that you are at risk of a brain stroke.")
